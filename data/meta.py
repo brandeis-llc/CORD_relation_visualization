@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import Sequence, Dict
 from string import digits, ascii_lowercase, ascii_uppercase
 
 
@@ -20,9 +20,10 @@ class ParseMetaData(object):
         authors_full: ['Jane Doe', ...]
         :return:
         """
-        try:
-            authors = self.meta_dict['authors']
-        except KeyError:
+        authors = self.meta_dict['authors']
+        if not authors:
+            self.meta_dict['authors'] = []
+            self.meta_dict['authors_full'] = []
             return
         authors = authors.split(';')
         authors_split = [self._split_name(author.split(', ')) for author in authors]
@@ -46,6 +47,10 @@ class ParseMetaData(object):
         """
         # TODO: get full date (year, month, day)
         date = self.meta_dict['publish_time']
+        if not date:
+            self.meta_dict['publish_time'] = {'year': '', 'month': ''}
+            self.meta_dict['es_date'] = ''
+            return
         date_shape = ''.join(self.WORD_SHAPE_MAPPING[d] for d in date)
         if date_shape == 'dddd':
             date = {'year': date, 'month': ''}
@@ -57,7 +62,7 @@ class ParseMetaData(object):
         year = self.meta_dict['publish_time']['year']
         month = self.meta_dict['publish_time']['month']
         if not year:
-            year = '2019'
+            year = '2020'
         if not month:
             month = '01'
         self.meta_dict['es_date'] = '-'.join([year, month, '01'])
@@ -73,7 +78,7 @@ class ParseMetaData(object):
         self.WORD_SHAPE_MAPPING.update(zip(ascii_uppercase, len(ascii_uppercase) * 'C'))
         self.WORD_SHAPE_MAPPING.update({' ': ' ', '-': '-'})
 
-    def __call__(self, meta_dict: dict):
+    def __call__(self, meta_dict: Dict):
         self.meta_dict = meta_dict
         self._parse_authors()
         self._parse_date()

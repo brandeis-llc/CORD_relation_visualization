@@ -29,6 +29,7 @@ class CovidMeta(Document):
     journal = Keyword()
     publish_time = InnerDoc()
     es_date = Date()  # Date data type
+    action_interactions = InnerDoc()
 
     def save(self, *args, **kwargs):
         return super(CovidMeta, self).save(*args, **kwargs)
@@ -69,7 +70,8 @@ class ESIndex(object):
                 "countries": doc.get('countries', []),
                 "journal": doc['journal'],
                 "publish_time": doc['publish_time'],
-                "es_date": doc['es_date']}
+                "es_date": doc['es_date'],
+                "action_interactions": doc['action_interactions']}
 
     def load(self, docs):
         helpers.bulk(self.es, self.to_bulk_iterable(docs))
