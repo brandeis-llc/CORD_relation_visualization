@@ -13,6 +13,25 @@ class ParseChemGeneRel(object):
         self.ACTION_MAPPING = {'increases': '++', 'decreases': '--', 'affects': '->'}
         self.gene_mapping = load_pickled_obj(gene_file)
         self.chem_mapping = load_pickled_obj(chem_file)
+        # TODO: overlapped ids are precomputed and hardcoded here
+        self.overlapped_pmids = {'17288598',
+                                 '17434272',
+                                 '19409407',
+                                 '19772353',
+                                 '20003521',
+                                 '23825585',
+                                 '24244327',
+                                 '24534281',
+                                 '24561310',
+                                 '25966753',
+                                 '26551751',
+                                 '26752173',
+                                 '26917416',
+                                 '27760801',
+                                 '28438630',
+                                 '28786057',
+                                 '28806546',
+                                 '29038090'}
 
     def _parse_interaction_actions(self, interaction_str: str, use_act_mapping=True) -> List[str]:
         act_inter_pairs = interaction_str.split('|')
@@ -25,14 +44,19 @@ class ParseChemGeneRel(object):
         return act_inter_pairs
 
     def __call__(self, pmid: str) -> Dict[str, List]:
+        if pmid not in self.overlapped_pmids:
+            return {'action_interactions': []}
         sub_df = self.csv_df[self.csv_df.pmids == pmid]
         if not len(sub_df):
             return {'action_interactions': []}
         actions = []
+        sub_df = sub_df.fillna('')
         for line in sub_df.iloc:
             line_dict = line.fillna('').to_dict()
+            line_dict['GeneID'] = str(line_dict['GeneID'])
+            line_dict['OrganismID'] = str(int(line_dict['OrganismID'])) if line_dict['OrganismID'] else ''
             line_dict['Gene'] = self.gene_mapping.get(str(line_dict['GeneID']), '')
-            line_dict['Chemical'] = self.chem_mapping.get(line_dict['ChemicalID'], '')
+            line_dict['Chemical'] = self.chem_mapping.get(f"MESH:{line_dict['ChemicalID']}", '')
             line_dict['InteractionActions'] = self._parse_interaction_actions(line_dict['InteractionActions'])
             actions.append(line_dict)
         return {'action_interactions': actions}
