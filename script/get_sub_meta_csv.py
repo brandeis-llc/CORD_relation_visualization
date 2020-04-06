@@ -1,6 +1,6 @@
 import argparse
 from typing import Sequence
-import pandas
+import pandas as pd
 
 
 def get_sub_meta_csv(in_file: str, fields: Sequence, allow_empty: bool, out_file: str):
@@ -12,7 +12,7 @@ def get_sub_meta_csv(in_file: str, fields: Sequence, allow_empty: bool, out_file
     :param out_file: output file path
     :return:
     """
-    csv_df = pandas.read_csv(in_file)
+    csv_df = pd.read_csv(in_file)
     columns = csv_df.columns.values
     invalid_fields = set(fields) - set(columns)
     if invalid_fields:
@@ -21,7 +21,8 @@ def get_sub_meta_csv(in_file: str, fields: Sequence, allow_empty: bool, out_file
     if fields:
         csv_df = csv_df[fields]
     if not allow_empty:
-        csv_df = csv_df.dropna().reset_index(drop=True)
+        # TODO: sha and pmid are not empty so that we can trace back to the original paper and parsed json doc
+        csv_df = csv_df.dropna(subset=['pubmed_id', 'sha']).reset_index(drop=True)
     csv_df.to_csv(out_file, index=False)
 
 
