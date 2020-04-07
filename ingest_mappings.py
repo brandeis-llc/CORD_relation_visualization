@@ -1,5 +1,7 @@
+from os.path import join as pjoin
 from data import pickle_obj_mapping
 import pandas as pd
+import argparse
 
 
 def parse_genes_mapping(input_file: str, output_file: str):
@@ -36,6 +38,10 @@ def parse_diseases_mapping(input_file: str, output_file: str):
 
 
 if __name__ == "__main__":
-    parse_genes_mapping('../raw_data/KG/genes.csv', '../raw_data/genes_mapping.pkl')
-    parse_chemicals_mapping('../raw_data/KG/chemicals.csv', '../raw_data/chem_mapping.pkl')
-    parse_diseases_mapping('../raw_data/KG/diseases.csv', '../raw_data/dis_mapping.pkl')
+    parser = argparse.ArgumentParser()
+    parser.add_argument('input_dir')
+    parser.add_argument('output_dir')
+    args = parser.parse_args()
+    parse_genes_mapping(pjoin(args.input_dir, 'genes.csv'), pjoin(args.output_dir, 'genes_mapping.pkl'))
+    parse_chemicals_mapping(pjoin(args.input_dir, 'chemicals.csv'), pjoin(args.output_dir, 'chem_mapping.pkl'))
+    parse_diseases_mapping(pjoin(args.input_dir, 'diseases.csv'), pjoin(args.output_dir, 'dis_mapping.pkl'))
