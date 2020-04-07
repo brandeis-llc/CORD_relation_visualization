@@ -3,7 +3,8 @@ raw_data
 .idea/
 .DS_Store
 note.txt
-*.ipynb
+script/*.ipynb
+playground.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

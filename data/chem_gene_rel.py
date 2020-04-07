@@ -1,6 +1,4 @@
 from typing import Dict, List
-from os import listdir, path
-import json
 import pandas as pd
 from data import load_pickled_obj
 
@@ -64,6 +62,21 @@ class ParseChemGeneRel(object):
     def _parse_interaction(self):
         # TODO: cleaning and more maybe
         raise NotImplementedError
+
+    def _quick_process(self, sub_df: pd.DataFrame):
+        line_dict = sub_df.fillna('').to_dict()
+        line_dict['GeneID'] = str(line_dict['GeneID'])
+        line_dict['OrganismID'] = str(int(line_dict['OrganismID'])) if line_dict['OrganismID'] else ''
+        line_dict['Gene'] = self.gene_mapping.get(str(line_dict['GeneID']), '')
+        line_dict['Chemical'] = self.chem_mapping.get(f"MESH:{line_dict['ChemicalID']}", '')
+        line_dict['InteractionActions'] = self._parse_interaction_actions(line_dict['InteractionActions'])
+        pmids_lst = line_dict['pmids'].split('|')
+        del line_dict['pmids']
+        return line_dict, pmids_lst
+
+    def __iter__(self):
+        for line in self.csv_df.iloc:
+            yield self._quick_process(line)
 
 
 if __name__ == "__main__":

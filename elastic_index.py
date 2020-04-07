@@ -20,6 +20,7 @@ class CovidMeta(Document):
     create Document mapping schema
     """
     sha = Text()
+    pubmed_id = Keyword()
     title = Text()
     abstract = Text()
     authors = InnerDoc()  # data type for an array of objects
@@ -61,16 +62,17 @@ class ESIndex(object):
                 "_type": "_doc",
                 "_id": identifier,
                 "_index": self.index,
-                "sha": doc['sha'],
-                "title": doc['title'],
-                "abstract": doc['abstract'],
-                "authors": doc['authors'],
+                "sha": doc.get('sha', ''),
+                "pubmed_id": doc['pubmed_id'],
+                "title": doc.get('title', ''),
+                "abstract": doc.get('abstract', ''),
+                "authors": doc.get('authors', []),
                 "authors_full": doc.get('authors_full', []),
                 "institutions": doc.get('institutions', []),
                 "countries": doc.get('countries', []),
-                "journal": doc['journal'],
-                "publish_time": doc['publish_time'],
-                "es_date": doc['es_date'],
+                "journal": doc.get('journal', ''),
+                "publish_time": doc.get('publish_time', []),
+                "es_date": doc.get('es_date', None),
                 "action_interactions": doc['action_interactions']}
 
     def load(self, docs):
