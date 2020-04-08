@@ -1,4 +1,5 @@
 import time
+import pickle
 import argparse
 from collections import defaultdict
 
@@ -7,26 +8,30 @@ from elastic_index import ESIndex
 from data.chem_gene_rel import ParseChemGeneRel
 
 
-def load_es_index(index_name, rel_parser):
+def load_es_index(index_name, rel_parser, docs_input='raw_data/docs.pkl'):
     """
     build es index using chem_gene_ixns_relation.csv
-    :param index_name: es index name
-    :return:
     """
-    st = time.time()
     docs = []
     docs_dict = defaultdict(list)
-
-    for i, (rel_doc, pmids_lst) in enumerate(rel_parser):
-        for pmid in pmids_lst:
-            docs_dict[pmid].append(rel_doc)
-        if (i+1) % 10000 == 0:
-            print(f'loading {i+1} documents...')
-
-    for pmid in docs_dict:
-        docs.append({'pubmed_id': pmid, 'action_interactions': docs_dict[pmid]})
+    try:
+        with open(docs_input, 'rb') as f:
+            docs = pickle.load(f)
+    except FileNotFoundError:
+        for i, (rel_doc, pmids_lst) in enumerate(rel_parser):
+            for pmid in pmids_lst:
+                docs_dict[pmid].append(rel_doc)
+            if (i+1) % 50000 == 0:
+                print(f'loading {i+1} documents...')
+        for pmid in docs_dict:
+            docs.append({'pubmed_id': pmid, 'action_interactions': docs_dict[pmid]})
+        with open(docs_input, 'wb') as f:
+            pickle.dump(docs, f)
+        print(f'Writing docs to {docs_input}...')
+    st = time.time()
     ESIndex(index_name, docs)
-    print(f"=== Built {index_name} in {round(time.time() - st, 4)} seconds ===")
+    print(f'building index ...')
+    print(f"=== Built {index_name} in {round(time.time() - st, 2)} seconds ===")
 
 
 if __name__ == "__main__":
