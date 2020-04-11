@@ -31,6 +31,7 @@ class CovidMeta(Document):
     publish_time = InnerDoc()
     es_date = Date()  # Date data type
     action_interactions = InnerDoc()
+    PPIs = InnerDoc()
 
     def save(self, *args, **kwargs):
         return super(CovidMeta, self).save(*args, **kwargs)
@@ -39,10 +40,10 @@ class CovidMeta(Document):
 class ESIndex(object):
     def __init__(self, index_name, docs):
         # connect to localhost (for elasticsearch)
-        connections.create_connection(hosts=['morbius.cs-i.brandeis.edu:22750'], timeout=100)
+        connections.create_connection(hosts=['morbius.cs-i.brandeis.edu:22762'], timeout=100)
         self.index = index_name
         # connect to localhost (for elasticsearch-dsl)
-        self.es = Elasticsearch([{'host': 'morbius.cs-i.brandeis.edu', 'port': 22750}], timeout=100)
+        self.es = Elasticsearch([{'host': 'morbius.cs-i.brandeis.edu', 'port': 22762}], timeout=100)
         es_index = Index(self.index)
         # delete existing index that has the same name
         if es_index.exists():
@@ -73,7 +74,9 @@ class ESIndex(object):
                 "journal": doc.get('journal', ''),
                 "publish_time": doc.get('publish_time', []),
                 "es_date": doc.get('es_date', None),
-                "action_interactions": doc['action_interactions']}
+                "action_interactions": doc.get('action_interactions', []),
+                "PPIs": doc['PPIs']
+            }
 
     def load(self, docs):
         helpers.bulk(self.es, self.to_bulk_iterable(docs))
