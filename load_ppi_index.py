@@ -1,30 +1,37 @@
 import time
 import pickle
 import argparse
+from typing import List, Dict
 from collections import defaultdict
 
 from elastic_index import ESIndex
 
 from data.parse_pmc_stats import ParsePMCStmts
+from data.meta import ParseMetaData
 
 
-def load_es_index(index_name, ppi_parser: ParsePMCStmts, docs_input='raw_data/ppi_docs.pkl'):
+def load_es_index(index_name, ppi_parser: ParsePMCStmts, meta_input: str, docs_input='raw_data/ppi_docs.pkl'):
     """
     build es index using chem_gene_ixns_relation.csv
     """
     docs = []
-    docs_dict = defaultdict(list)
     try:
         with open(docs_input, 'rb') as f:
             docs = pickle.load(f)
     except FileNotFoundError:
+        meta_parser = ParseMetaData()
+        with open(meta_input, 'rb') as f:
+            meta_data: List[Dict] = pickle.load(f)
+            print(f'loading {meta_input}...')
+        pmid_oriented_meta = {item['pubmed_id']: item for item in meta_data}
         for i, (pmid, ppi_doc) in enumerate(ppi_parser.generate_evidence()):
-            docs.append({'pubmed_id': pmid + '-' + str(i), 'PPIs': ppi_doc})
-            # docs_dict[pmid].append(ppi_doc)
+            tmp_doc = {'pubmed_id': pmid, 'PPIs': ppi_doc, 'docid': pmid + '-' + str(i)}
+            meta_doc = pmid_oriented_meta.get(pmid, {}).copy()
+            meta_parser(meta_doc)
+            tmp_doc.update(meta_parser.meta_dict)
+            docs.append(tmp_doc)
             if (i+1) % 10000 == 0:
                 print(f'loading {i+1} documents...')
-        # for pmid in docs_dict:
-        #     docs.append({'pubmed_id': pmid, 'PPIs': docs_dict[pmid]})
         with open(docs_input, 'wb') as f:
             pickle.dump(docs, f)
         print(f'Writing docs to {docs_input}...')
@@ -37,8 +44,9 @@ def load_es_index(index_name, ppi_parser: ParsePMCStmts, docs_input='raw_data/pp
 if __name__ == "__main__":
 
     pmc_stmts_path = 'raw_data/2020-03-20-john/cord19_pmc_stmts_filt.pkl'
+    meta_input_path = 'raw_data/sub_metadata.pkl'
     ppi_parser = ParsePMCStmts(pmc_stmts_path)
     parser = argparse.ArgumentParser()
     parser.add_argument('index_name')
     args = parser.parse_args()
-    load_es_index(args.index_name, ppi_parser)
+    load_es_index(args.index_name, ppi_parser, meta_input_path)

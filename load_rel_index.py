@@ -8,7 +8,7 @@ from elastic_index import ESIndex
 from data.chem_gene_rel import ParseChemGeneRel
 
 
-def load_es_index(index_name, rel_parser, docs_input='raw_data/docs.pkl'):
+def load_es_index(index_name, rel_parser, docs_input='raw_data/rel_docs.pkl'):
     """
     build es index using chem_gene_ixns_relation.csv
     """

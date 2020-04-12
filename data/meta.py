@@ -20,7 +20,7 @@ class ParseMetaData(object):
         authors_full: ['Jane Doe', ...]
         :return:
         """
-        authors = self.meta_dict['authors']
+        authors = self.meta_dict.get('authors')
         if not authors:
             self.meta_dict['authors'] = []
             self.meta_dict['authors_full'] = []
@@ -46,10 +46,10 @@ class ParseMetaData(object):
         :return:
         """
         # TODO: get full date (year, month, day)
-        date = self.meta_dict['publish_time']
+        date = self.meta_dict.get('publish_time')
         if not date:
             self.meta_dict['publish_time'] = {'year': '', 'month': ''}
-            self.meta_dict['es_date'] = ''
+            self.meta_dict['es_date'] = None
             return
         date_shape = ''.join(self.WORD_SHAPE_MAPPING[d] for d in date)
         if date_shape == 'dddd':
