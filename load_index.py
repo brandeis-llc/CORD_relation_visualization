@@ -20,7 +20,7 @@ def load_es_index(index_name, data_dir: str, meta_file: str, rel_parser):
     meta_parser = ParseMetaData()
     st = time.time()
     csv_df = pd.read_csv(path.join(data_dir, meta_file))
-    csv_df = csv_df.astype({'pubmed_id': 'int32'})
+    csv_df = csv_df.astype({'pubmed_id': 'int32'}).astype({'pubmed_id': 'str'})
     docs = []
     print(f'Building ES index for {len(csv_df)} documents...')
 
@@ -30,7 +30,7 @@ def load_es_index(index_name, data_dir: str, meta_file: str, rel_parser):
         doc_parser = ParseJsonDoc(data_dir, item_dict['sha'])
         if doc_parser.fields:
             item_dict.update(doc_parser.fields)  # parse each corresponding json doc and update the meta dict
-        item_dict.update(rel_parser(str(item_dict['pubmed_id'])))  # add interaction actions extracted from each article
+        item_dict.update(rel_parser(item_dict['pubmed_id']))  # add interaction actions extracted from each article
         meta_parser(item_dict)  # further parse the updated meta dict
         docs.append(meta_parser.meta_dict)
         if (i + 1) % 1000 == 0:

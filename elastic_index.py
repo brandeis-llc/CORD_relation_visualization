@@ -1,24 +1,13 @@
-import time
-
-from elasticsearch import Elasticsearch
+from elasticsearch import Elasticsearch, helpers
 from elasticsearch_dsl import Index, Document, Text, Keyword, InnerDoc, Date
-from elasticsearch_dsl.analysis import analyzer
-from elasticsearch import helpers
 from elasticsearch_dsl.connections import connections
-
-import pandas as pd
-
-
-# sample custom analyzer for testing
-my_analyzer = analyzer('custom',
-                       tokenizer='standard',
-                       filter=['lowercase', 'stop'])
 
 
 class CovidMeta(Document):
     """
     create Document mapping schema
     """
+
     sha = Text()
     pubmed_id = Keyword()
     title = Text()
@@ -40,10 +29,14 @@ class CovidMeta(Document):
 class ESIndex(object):
     def __init__(self, index_name, docs):
         # connect to localhost (for elasticsearch)
-        connections.create_connection(hosts=['morbius.cs-i.brandeis.edu:22762'], timeout=100)
+        connections.create_connection(
+            hosts=["morbius.cs-i.brandeis.edu:22762"], timeout=100
+        )
         self.index = index_name
         # connect to localhost (for elasticsearch-dsl)
-        self.es = Elasticsearch([{'host': 'morbius.cs-i.brandeis.edu', 'port': 22762}], timeout=100)
+        self.es = Elasticsearch(
+            [{"host": "morbius.cs-i.brandeis.edu", "port": 22762}], timeout=100
+        )
         es_index = Index(self.index)
         # delete existing index that has the same name
         if es_index.exists():
@@ -56,39 +49,31 @@ class ESIndex(object):
     def to_bulk_iterable(self, docs):
         # bulk insertion
         for i, doc in enumerate(docs):
-            docid = doc.get('docid')
-            identifier = i if docid is None else docid
+            doc_id = doc.get("doc_id")
+            identifier = i if doc_id is None else doc_id
             # doc to be inserted should be consistent with Document mapping we defined above
             yield {
                 "_type": "_doc",
                 "_id": identifier,
                 "_index": self.index,
-                "sha": doc.get('sha', ''),
-                "pubmed_id": doc['pubmed_id'],
-                "title": doc.get('title', ''),
-                "abstract": doc.get('abstract', ''),
-                "authors": doc.get('authors', []),
-                "authors_full": doc.get('authors_full', []),
-                "institutions": doc.get('institutions', []),
-                "countries": doc.get('countries', []),
-                "journal": doc.get('journal', ''),
-                "publish_time": doc.get('publish_time', []),
-                "es_date": doc.get('es_date', None),
-                "action_interactions": doc.get('action_interactions', []),
-                "PPIs": doc['PPIs']
+                "sha": doc.get("sha", None),
+                "pubmed_id": doc[
+                    "pubmed_id"
+                ],  # technically pubmed_id will never be empty
+                "title": doc.get("title", None),
+                "abstract": doc.get("abstract", None),
+                "authors": doc.get("authors", None),
+                "authors_full": doc.get("authors_full", None),
+                "institutions": doc.get("institutions", None),
+                "countries": doc.get("countries", None),
+                "journal": doc.get("journal", None),
+                "publish_time": doc.get("publish_time", None),
+                "es_date": doc.get("es_date", None),
+                "action_interactions": doc.get(
+                    "action_interactions", None
+                ),  # for Heng Ji's data
+                "PPIs": doc.get("PPIs", None),  # for John's data,
             }
 
     def load(self, docs):
         helpers.bulk(self.es, self.to_bulk_iterable(docs))
-
-
-if __name__ == "__main__":
-    # for testing
-    st = time.time()
-    csv_df = pd.read_csv('raw_data/sub_meta.csv')
-    docs = []
-    for i, item in enumerate(csv_df.iloc):
-        docs.append(item.to_dict())
-    ESIndex('covid_meta_index', docs)
-    print(f"=== Built index in {round(time.time() - st, 4)} seconds ===")
-
