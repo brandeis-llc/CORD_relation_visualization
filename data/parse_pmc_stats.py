@@ -48,6 +48,15 @@ class ParsePMCStmts(object):
     def _get_rel_type(stmt) -> str:
         return type(stmt).__name__
 
+    @staticmethod
+    def _get_container_name(rel_type: str) -> str:
+        if rel_type.endswith("tion"):
+            return rel_type[:-3] + "or"
+        elif rel_type.endswith("Amount"):
+            return rel_type[:-6] + "er"
+        else:
+            return rel_type
+
     def __iter__(self):
         for stmt in self.stmts:
             agents = tuple(agent.name if agent else None for agent in stmt.agent_list())
@@ -76,7 +85,7 @@ class ParsePMCStmts(object):
                         "rel": rel_type,
                         "meta_rel": meta_rel_type,
                         "ents": entities,
-                        "container": f"{rel_type}-{entities[1]}",
+                        "container": f"{entities[1]} {self._get_container_name(rel_type)}",
                     }
                 elif entities:
                     yield pmid, {
