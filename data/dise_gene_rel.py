@@ -1,3 +1,4 @@
+from collections import defaultdict
 import pandas as pd
 from data import load_pickled_obj
 
@@ -23,6 +24,14 @@ class ParseDiseGeneRel(object):
     def __iter__(self):
         for line in self.csv_df.iloc:
             yield self._quick_process(line)
+
+    def get_gene_dise_dist(self):
+        dist = defaultdict(set)
+        for line in self.csv_df.iloc:
+            dist[str(line.GeneID)].add(
+                self.dise_mapping.get(line.DiseaseID, line.DiseaseID)["DiseaseName"]
+            )
+        return dist
 
 
 if __name__ == "__main__":

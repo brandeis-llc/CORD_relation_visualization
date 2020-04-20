@@ -1,17 +1,21 @@
-from typing import Dict, List
+from typing import Dict, List, Set
 import pandas as pd
 from data import load_pickled_obj
+from data.dise_gene_rel import ParseDiseGeneRel
 
 
 class ParseChemGeneRel(object):
     """parse chem_gene_ixns_relation.csv"""
 
-    def __init__(self, input_file, gene_file, chem_file):
+    def __init__(
+        self, input_file, gene_file, chem_file, gene_dise_mapping: Dict[str, Set] = None
+    ):
         print(f"building ChemGeneRel parser...")
         self.csv_df = pd.read_csv(input_file, delimiter="\t")
         self.ACTION_MAPPING = {"increases": "++", "decreases": "--", "affects": "->"}
         self.gene_mapping = load_pickled_obj(gene_file)
         self.chem_mapping = load_pickled_obj(chem_file)
+        self.gene_dise_mapping = gene_dise_mapping
         # TODO: overlapped ids are precomputed and hardcoded here
         self.overlapped_pmids = {
             "17288598",
@@ -87,6 +91,9 @@ class ParseChemGeneRel(object):
         line_dict["InteractionActions"] = self._parse_interaction_actions(
             line_dict["InteractionActions"]
         )
+        if self.gene_dise_mapping:
+            dises = self.gene_dise_mapping.get(line_dict["GeneID"])
+            line_dict["diseases"] = list(dises) if dises else None
         pmids_lst = line_dict["pmids"].split("|")
         del line_dict["pmids"]
         return line_dict, pmids_lst
@@ -100,4 +107,18 @@ if __name__ == "__main__":
     gene_mapping_path = "../raw_data/genes_mapping.pkl"
     chem_mapping_path = "../raw_data/chem_mapping.pkl"
     chem_gen_rel_path = "../raw_data/KG/chem_gene_ixns_relation.csv"
-    rel_parser = ParseChemGeneRel(chem_gen_rel_path, gene_mapping_path, chem_mapping_path)
+    gene_dise_parser = ParseDiseGeneRel(
+        "../raw_data/KG/sub_genes_diseases_relation.csv",
+        gene_mapping_path,
+        "../raw_data/dis_mapping.pkl",
+    )
+    rel_parser = ParseChemGeneRel(
+        chem_gen_rel_path,
+        gene_mapping_path,
+        chem_mapping_path,
+        gene_dise_parser.get_gene_dise_dist(),
+    )
+    for i, line in enumerate(rel_parser):
+        print(line)
+        if i > 10:
+            break
