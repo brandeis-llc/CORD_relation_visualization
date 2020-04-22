@@ -15,7 +15,6 @@ def load_es_index(index_name, rel_parser, docs_input="raw_data/rel_docs.pkl"):
     build es index using chem_gene_ixns_relation.csv
     """
     docs = []
-    docs_dict = defaultdict(list)
     try:
         with open(docs_input, "rb") as f:
             docs = pickle.load(f)
