@@ -1,48 +1,56 @@
-from collections import namedtuple
+import attr
+from typing import Tuple, Optional, List
 from indra.tools import assemble_corpus as ac
 from indra.statements.evidence import Evidence
+from indra.statements import Statement
 
 
-class ParsePMCStmts(object):
-    def __init__(self, input_file: str):
-        """
-        parse cord19_pmc_stmts_filt.pkl
-        :param input_file:
-        """
-        self.stmts = ac.load_statements(input_file)
-        self.relation = namedtuple("stmt", ["agents", "rel"])
-        self.ALT_PMID = "UNK_PMID"
-        self.Modification = "Modification"
-        self.RegulateActivity = "RegulateActivity"
-        self.Other = "Other"
-        self.META_REL_TYPES = {
-            "Acetylation": self.Modification,
-            "Activation": self.RegulateActivity,
-            "Autophosphorylation": self.Modification,
-            "Complex": self.Other,
-            "Deacetylation": self.Modification,
-            "DecreaseAmount": self.RegulateActivity,
-            "Deglycosylation": self.Modification,
-            "Demethylation": self.Modification,
-            "Depalmitoylation": self.Modification,
-            "Dephosphorylation": self.Modification,
-            "Deribosylation": self.Modification,
-            "Desumoylation": self.Modification,
-            "Deubiquitination": self.Modification,
-            "Farnesylation": self.Modification,
-            "Glycosylation": self.Modification,
-            "Hydroxylation": self.Modification,
-            "IncreaseAmount": self.RegulateActivity,
-            "Inhibition": self.RegulateActivity,
-            "Methylation": self.Modification,
-            "Myristoylation": self.Modification,
-            "Palmitoylation": self.Modification,
-            "Phosphorylation": self.Modification,
-            "Ribosylation": self.Modification,
-            "Sumoylation": self.Modification,
-            "Translocation": self.Other,
-            "Ubiquitination": self.Modification,
-        }
+@attr.s()
+class Relation:
+    agents: Tuple[Optional[str], ...] = attr.ib()
+    rel: str = attr.ib()
+
+
+@attr.s(auto_attribs=True)
+class ParsePMCStmts:
+    stmts: List["Statement"] = attr.ib()
+    UNK_PMID: str = attr.ib("UNK_PMID")
+    Modification: str = "Modification"
+    RegulateActivity: str = "RegulateActivity"
+    Other: str = "Other"
+    META_REL_TYPES = {
+        "Acetylation": Modification,
+        "Activation": RegulateActivity,
+        "Autophosphorylation": Modification,
+        "Complex": Other,
+        "Deacetylation": Modification,
+        "DecreaseAmount": RegulateActivity,
+        "Deglycosylation": Modification,
+        "Demethylation": Modification,
+        "Depalmitoylation": Modification,
+        "Dephosphorylation": Modification,
+        "Deribosylation": Modification,
+        "Desumoylation": Modification,
+        "Deubiquitination": Modification,
+        "Farnesylation": Modification,
+        "Glycosylation": Modification,
+        "Hydroxylation": Modification,
+        "IncreaseAmount": RegulateActivity,
+        "Inhibition": RegulateActivity,
+        "Methylation": Modification,
+        "Myristoylation": Modification,
+        "Palmitoylation": Modification,
+        "Phosphorylation": Modification,
+        "Ribosylation": Modification,
+        "Sumoylation": Modification,
+        "Translocation": Other,
+        "Ubiquitination": Modification,
+    }
+
+    @classmethod
+    def from_pkl(cls, input_pkl: str, *, unk_pmid="UNK_PMID") -> "ParsePMCStmts":
+        stmts = ac.load_statements(input_pkl)
+        return ParsePMCStmts(stmts, unk_pmid)
 
     @staticmethod
     def _get_rel_type(stmt) -> str:
@@ -60,7 +68,7 @@ class ParsePMCStmts(object):
     def __iter__(self):
         for stmt in self.stmts:
             agents = tuple(agent.name if agent else None for agent in stmt.agent_list())
-            yield self.relation(agents, self._get_rel_type(stmt))
+            yield Relation(agents, self._get_rel_type(stmt))
 
     def generate_evidence(self):
         for stmt in self.stmts:
@@ -77,7 +85,7 @@ class ParsePMCStmts(object):
                 KEY1 = "ent1"
                 KEY2 = "ent2"
             for evi in stmt.evidence:
-                pmid = evi.pmid if evi.pmid else self.ALT_PMID
+                pmid = evi.pmid if evi.pmid else self.UNK_PMID
                 if len(entities) == 2:
                     yield pmid, {
                         KEY1: entities[0],
@@ -110,7 +118,7 @@ class ParsePMCStmts(object):
             pmid = evidence.pmid
             assert pmid is not None
         except AssertionError:
-            pmid = self.ALT_PMID
+            pmid = self.UNK_PMID
         try:
             entities = evidence.annotations["agents"]["raw_text"]
         except AttributeError:
@@ -120,7 +128,7 @@ class ParsePMCStmts(object):
 
 if __name__ == "__main__":
     filename = "../raw_data/2020-03-20-john/cord19_pmc_stmts_filt.pkl"
-    pps = ParsePMCStmts(filename)
+    pps = ParsePMCStmts.from_pkl(filename)
     for i, rel in enumerate(pps.generate_evidence()):
         print(rel)
         if i > 100:
