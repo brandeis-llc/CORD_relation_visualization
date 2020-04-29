@@ -85,7 +85,13 @@ class ParsePMCStmts:
                 KEY1 = "ent1"
                 KEY2 = "ent2"
             for evi in stmt.evidence:
-                pmid = evi.pmid if evi.pmid else self.UNK_PMID
+                if evi.pmid:
+                    pmid = evi.pmid
+                    pmid_url = f"https://www.ncbi.nlm.nih.gov/pubmed/{pmid}"
+                else:
+                    pmid = self.UNK_PMID
+                    pmid_url = None
+
                 if len(entities) == 2:
                     yield pmid, {
                         KEY1: entities[0],
@@ -94,6 +100,8 @@ class ParsePMCStmts:
                         "meta_rel": meta_rel_type,
                         "ents": entities,
                         "container": f"{entities[1]} {self._get_container_name(rel_type)}",
+                        "text": evi.text,
+                        "pmid_url": pmid_url
                     }
                 elif entities:
                     yield pmid, {
@@ -102,6 +110,8 @@ class ParsePMCStmts:
                         "rel": rel_type,
                         "meta_rel": meta_rel_type,
                         "ents": entities,
+                        "text": evi.text,
+                        "pmid_url": pmid_url
                     }
                 else:
                     yield pmid, {
@@ -110,6 +120,8 @@ class ParsePMCStmts:
                         "rel": rel_type,
                         "meta_rel": meta_rel_type,
                         "ents": entities,
+                        "text": evi.text,
+                        "pmid_url": pmid_url
                     }
 
     def _parse_evidence(self, evidence: Evidence):

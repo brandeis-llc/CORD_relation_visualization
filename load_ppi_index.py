@@ -17,7 +17,7 @@ def load_es_index(
     docs_input="raw_data/ppi_docs.pkl",
 ):
     """
-    build es index using chem_gene_ixns_relation.csv
+    build es index using cord19_pmc_stmts_filt.pkl
     """
     docs = []
     try:
@@ -50,7 +50,7 @@ if __name__ == "__main__":
 
     pmc_stmts_path = "raw_data/2020-03-20-john/cord19_pmc_stmts_filt.pkl"
     meta_input_path = "raw_data/sub_metadata.pkl"
-    ppi_parser = ParsePMCStmts(pmc_stmts_path)
+    ppi_parser = ParsePMCStmts.from_pkl(pmc_stmts_path)
     parser = argparse.ArgumentParser()
     parser.add_argument("index_name")
     args = parser.parse_args()

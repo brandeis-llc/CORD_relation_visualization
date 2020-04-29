@@ -30,12 +30,12 @@ class ESIndex(object):
     def __init__(self, index_name, docs):
         # connect to localhost (for elasticsearch)
         connections.create_connection(
-            hosts=["morbius.cs-i.brandeis.edu:22762"], timeout=100
+            hosts=["morbius.cs-i.brandeis.edu:22762"], http_auth=('llc', 'oknevermind'), timeout=100
         )
         self.index = index_name
         # connect to localhost (for elasticsearch-dsl)
         self.es = Elasticsearch(
-            [{"host": "morbius.cs-i.brandeis.edu", "port": 22762}], timeout=100
+            [{"host": "morbius.cs-i.brandeis.edu", "port": 22762}], http_auth=('llc', 'oknevermind'), timeout=100
         )
         es_index = Index(self.index)
         # delete existing index that has the same name
