@@ -77,7 +77,7 @@ class ParseChemGeneRel(object):
             "nucleotidylation": "Nucleotidylator",
             "oxidation": "Oxidator",
             "palmitoylation": "Palmitoylator",
-            "phosphorylation": "Phosphorylator",
+            "phosphorylation": "Kinase",
             "prenylation": "Prenylator",
             "reaction": "Regulator",
             "reduction": "Reducer",

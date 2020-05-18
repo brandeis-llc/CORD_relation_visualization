@@ -5,6 +5,7 @@ from typing import List, Dict
 from collections import defaultdict
 
 from elastic_index import ESIndex
+import spacy
 
 from data.parse_pmc_stats import ParsePMCStmts
 from data.meta import ParseMetaData
@@ -30,7 +31,7 @@ def load_es_index(
             print(f"loading {meta_input}...")
         pmid_oriented_meta = {item["pubmed_id"]: item for item in meta_data}
         for i, (pmid, ppi_doc) in enumerate(ppi_parser.generate_evidence()):
-            tmp_doc = {"pubmed_id": pmid, "PPIs": ppi_doc, "docid": pmid + "-" + str(i)}
+            tmp_doc = {"pubmed_id": pmid, "PPIs": ppi_doc, "doc_id": pmid + "-" + str(i)}
             meta_doc = pmid_oriented_meta.get(pmid, {}).copy()
             meta_parser(meta_doc)
             tmp_doc.update(meta_parser.meta_dict)
@@ -50,7 +51,8 @@ if __name__ == "__main__":
 
     pmc_stmts_path = "raw_data/2020-03-20-john/cord19_pmc_stmts_filt.pkl"
     meta_input_path = "raw_data/sub_metadata.pkl"
-    ppi_parser = ParsePMCStmts.from_pkl(pmc_stmts_path)
+    nlp = spacy.load("en_ner_bionlp13cg_md")
+    ppi_parser = ParsePMCStmts.from_pkl(pmc_stmts_path, spacy_model=nlp)
     parser = argparse.ArgumentParser()
     parser.add_argument("index_name")
     args = parser.parse_args()
