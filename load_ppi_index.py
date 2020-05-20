@@ -30,7 +30,7 @@ def load_es_index(
             meta_data: List[Dict] = pickle.load(f)
             print(f"loading {meta_input}...")
         pmid_oriented_meta = {item["pubmed_id"]: item for item in meta_data}
-        for i, (pmid, ppi_doc) in enumerate(ppi_parser.generate_evidence()):
+        for i, (pmid, ppi_doc) in enumerate(ppi_parser.generate_evidence_dict()):
             tmp_doc = {"pubmed_id": pmid, "PPIs": ppi_doc, "doc_id": pmid + "-" + str(i)}
             meta_doc = pmid_oriented_meta.get(pmid, {}).copy()
             meta_parser(meta_doc)
@@ -49,11 +49,12 @@ def load_es_index(
 
 if __name__ == "__main__":
 
-    pmc_stmts_path = "raw_data/2020-03-20-john/cord19_pmc_stmts_filt.pkl"
+    pmc_stmts_path = "raw_data/2020-03-20-john/statements_2020-05-18-17-11-32.json"
     meta_input_path = "raw_data/sub_metadata.pkl"
     nlp = spacy.load("en_ner_bionlp13cg_md")
-    ppi_parser = ParsePMCStmts.from_pkl(pmc_stmts_path, spacy_model=nlp)
+    ppi_parser = ParsePMCStmts.from_json(pmc_stmts_path, spacy_model=nlp)
     parser = argparse.ArgumentParser()
     parser.add_argument("index_name")
+    parser.add_argument("out_pkl_path")
     args = parser.parse_args()
-    load_es_index(args.index_name, ppi_parser, meta_input_path)
+    load_es_index(args.index_name, ppi_parser, meta_input_path, args.out_pkl_path)

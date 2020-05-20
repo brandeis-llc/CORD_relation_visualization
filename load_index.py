@@ -1,59 +1,58 @@
 import time
+import attr
 import argparse
-from os import path
-import pandas as pd
+from typing import List, Dict
+from collections import defaultdict
 
 from elastic_index import ESIndex
+import spacy
+
+from data.parse_pmc_stats import ParsePMCStmts
 from data.meta import ParseMetaData
-from data.doc import ParseJsonDoc
-from data.chem_gene_rel import ParseChemGeneRel
+from data import pickle_obj_mapping, load_pickled_obj
 
 
-def load_es_index(index_name, data_dir: str, meta_file: str, rel_parser):
-    """
-    build es index using COVID meta csv as the main entry
-    :param index_name: es index name
-    :param data_dir: directory where you have the meta csv
-    :param meta_file: meta csv file name
-    :return:
-    """
-    meta_parser = ParseMetaData()
-    st = time.time()
-    csv_df = pd.read_csv(path.join(data_dir, meta_file))
-    csv_df = csv_df.astype({"pubmed_id": "int32"}).astype({"pubmed_id": "str"})
-    docs = []
-    print(f"Building ES index for {len(csv_df)} documents...")
+@attr.s(auto_attribs=True)
+class IndexLoader:
+    index_name: str = attr.ib()
+    docs: List[Dict] = attr.ib()
 
-    for i, item in enumerate(csv_df.iloc):
-        item = item.fillna("")
-        item_dict = (
-            item.to_dict()
-        )  # read in each line from meta csv and convert it into a meta dict
-        doc_parser = ParseJsonDoc(data_dir, item_dict["sha"])
-        if doc_parser.fields:
-            item_dict.update(
-                doc_parser.fields
-            )  # parse each corresponding json doc and update the meta dict
-        item_dict.update(
-            rel_parser(item_dict["pubmed_id"])
-        )  # add interaction actions extracted from each article
-        meta_parser(item_dict)  # further parse the updated meta dict
-        docs.append(meta_parser.meta_dict)
-        if (i + 1) % 1000 == 0:
-            print(f"finish loading {i + 1} documents ...")
-    ESIndex(index_name, docs)
-    print(f"=== Built {index_name} in {round(time.time() - st, 4)} seconds ===")
+    def load(self):
+        st = time.time()
+        print(f"building index ...")
+        ESIndex(self.index_name, self.docs)
+        print(f"=== Built {self.index_name} in {round(time.time() - st, 2)} seconds ===")
 
+    @staticmethod
+    def _get_meta_docs(meta_pkl="raw_data/sub_metadata.pkl"):
+        meta_data: List[Dict] = load_pickled_obj(meta_pkl)
+        pmid_oriented_meta = {item["pubmed_id"]: item for item in meta_data}
+        return pmid_oriented_meta
 
-if __name__ == "__main__":
-    gene_mapping_path = "raw_data/genes_mapping.pkl"
-    chem_mapping_path = "raw_data/chem_mapping.pkl"
-    chem_gen_rel_path = "raw_data/KG/chem_gene_ixns_relation.csv"
-    rel_parser = ParseChemGeneRel(chem_gen_rel_path, gene_mapping_path, chem_mapping_path)
-    parser = argparse.ArgumentParser()
-    parser.add_argument("index_name")
-    parser.add_argument("data_dir")
-    parser.add_argument("meta_path")
-    args = parser.parse_args()
-    load_es_index(args.index_name, args.data_dir, args.meta_path, rel_parser)
-    # load_es_index('covid_meta_index', 'raw_data', 'sub_meta.csv')
+    @classmethod
+    def from_pmc_stats(cls, index_name, source_file_path: str, docs_pkl: str):
+        try:
+            docs = load_pickled_obj(docs_pkl)
+        except FileNotFoundError:
+            docs = []
+            nlp = spacy.load("en_ner_bionlp13cg_md")
+            if source_file_path.endswith(".json"):
+                pmc_stats_parser = ParsePMCStmts.from_json(source_file_path, spacy_model=nlp)
+            elif source_file_path.endswith(".pkl"):
+                pmc_stats_parser = ParsePMCStmts.from_pkl(source_file_path, spacy_model=nlp)
+            else:
+                raise TypeError(f"Cannot identify file {source_file_path}!")
+            meta_docs = cls._get_meta_docs()
+            meta_parser = ParseMetaData()
+            for i, (pmid, ppi_doc) in enumerate(pmc_stats_parser.generate_evidence_dict()):
+                tmp_doc = {"pubmed_id": pmid, "PPIs": ppi_doc, "doc_id": pmid + "-" + str(i)}
+                meta_doc = meta_docs.get(pmid, {}).copy()
+                meta_parser(meta_doc)
+                tmp_doc.update(meta_parser.meta_dict)
+                docs.append(tmp_doc)
+                if (i + 1) % 10000 == 0:
+                    print(f"loading {i + 1} documents...")
+                pickle_obj_mapping(docs, docs_pkl)
+            print(f"Writing docs to {docs_pkl}...")
+        return IndexLoader(index_name, docs)
+
