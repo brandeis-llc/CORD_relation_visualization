@@ -37,15 +37,25 @@ class IndexLoader:
             docs = []
             nlp = spacy.load("en_ner_bionlp13cg_md")
             if source_file_path.endswith(".json"):
-                pmc_stats_parser = ParsePMCStmts.from_json(source_file_path, spacy_model=nlp)
+                pmc_stats_parser = ParsePMCStmts.from_json(
+                    source_file_path, spacy_model=nlp
+                )
             elif source_file_path.endswith(".pkl"):
-                pmc_stats_parser = ParsePMCStmts.from_pkl(source_file_path, spacy_model=nlp)
+                pmc_stats_parser = ParsePMCStmts.from_pkl(
+                    source_file_path, spacy_model=nlp
+                )
             else:
                 raise TypeError(f"Cannot identify file {source_file_path}!")
             meta_docs = cls._get_meta_docs()
             meta_parser = ParseMetaData()
-            for i, (pmid, ppi_doc) in enumerate(pmc_stats_parser.generate_evidence_dict()):
-                tmp_doc = {"pubmed_id": pmid, "PPIs": ppi_doc, "doc_id": pmid + "-" + str(i)}
+            for i, (pmid, ppi_doc) in enumerate(
+                pmc_stats_parser.generate_evidence_dict()
+            ):
+                tmp_doc = {
+                    "pubmed_id": pmid,
+                    "PPIs": ppi_doc,
+                    "doc_id": pmid + "-" + str(i),
+                }
                 meta_doc = meta_docs.get(pmid, {}).copy()
                 meta_parser(meta_doc)
                 tmp_doc.update(meta_parser.meta_dict)
@@ -55,4 +65,3 @@ class IndexLoader:
                 pickle_obj_mapping(docs, docs_pkl)
             print(f"Writing docs to {docs_pkl}...")
         return IndexLoader(index_name, docs)
-

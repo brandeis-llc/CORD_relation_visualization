@@ -2,7 +2,6 @@ import time
 import pickle
 import argparse
 from typing import List, Dict
-from collections import defaultdict
 
 from elastic_index import ESIndex
 import spacy
@@ -28,7 +27,7 @@ def load_es_index(
         meta_parser = ParseMetaData()
         with open(meta_input, "rb") as f:
             meta_data: List[Dict] = pickle.load(f)
-            print(f"loading {meta_input}...")
+            print(f"finish loading {meta_input}...")
         pmid_oriented_meta = {item["pubmed_id"]: item for item in meta_data}
         for i, (pmid, ppi_doc) in enumerate(ppi_parser.generate_evidence_dict()):
             tmp_doc = {"pubmed_id": pmid, "PPIs": ppi_doc, "doc_id": pmid + "-" + str(i)}
@@ -49,9 +48,10 @@ def load_es_index(
 
 if __name__ == "__main__":
 
-    pmc_stmts_path = "raw_data/2020-03-20-john/statements_2020-05-18-17-11-32.json"
-    meta_input_path = "raw_data/sub_metadata.pkl"
+    pmc_stmts_path = "raw_data/PPCA/statements_covid19-7-7.json"
+    meta_input_path = "raw_data/sub_metadata-07-05.pkl"
     nlp = spacy.load("en_ner_bionlp13cg_md")
+    print(f"finish loading NER model...")
     ppi_parser = ParsePMCStmts.from_json(pmc_stmts_path, spacy_model=nlp)
     parser = argparse.ArgumentParser()
     parser.add_argument("index_name")

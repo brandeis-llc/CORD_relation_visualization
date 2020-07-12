@@ -50,6 +50,7 @@ class ParsePMCStmts:
         "Sumoylation": Modification,
         "Translocation": Other,
         "Ubiquitination": Modification,
+        "Dehydroxylation": Modification,
     }
 
     @classmethod
@@ -84,10 +85,16 @@ class ParsePMCStmts:
 
     @staticmethod
     def _get_container_name(rel_type: str) -> str:
-        if rel_type.endswith("tion"):
+        if rel_type == "Phosphorylation":
+            return "Kinase"
+        elif rel_type == "Dephosphorylation":
+            return "Phosphatase"
+        elif rel_type == "IncreaseAmount":
+            return "Up-regulator"
+        elif rel_type == "DecreaseAmount":
+            return "Down-regulator"
+        elif rel_type.endswith("tion"):
             return rel_type[:-3] + "or"
-        elif rel_type.endswith("Amount"):
-            return rel_type[:-6] + "er"
         else:
             return rel_type
 
@@ -111,7 +118,7 @@ class ParsePMCStmts:
         for stmt in self.stmts:
             rel_type = self._get_rel_type(stmt)
             entities = [agent.name if agent else None for agent in stmt.agent_list()]
-            meta_rel_type = self.META_REL_TYPES[rel_type]
+            meta_rel_type = self.META_REL_TYPES.get(rel_type, self.Other)
             KEY1, KEY2 = self._get_agent_types(meta_rel_type)
             for evi in stmt.evidence:
                 if evi.pmid:
@@ -223,20 +230,20 @@ class ParsePMCStmts:
             if (i + 1) % 500 == 0:
                 print(f"working on {i} statements...")
         if to_pkl:
-            pickle_obj_mapping(doc_dict, "../raw_data/pmid_ppi.pkl")
+            pickle_obj_mapping(doc_dict, "../raw_data/pmid_ppi-07-05.pkl")
         return doc_dict
 
 
 if __name__ == "__main__":
-    filename = "../raw_data/2020-03-20-john/statements_2020-05-18-17-11-32.json"
+    filename = "../raw_data/PPCA/statements_covid19-7-7.json"
     nlp = spacy.load("en_ner_bionlp13cg_md")
     pps = ParsePMCStmts.from_json(filename, spacy_model=nlp)
     for i, rel in enumerate(pps.generate_evidence_dict()):
         print(rel)
         break
-    # pps.generate_pmid_dict()
-    # docs = load_pickled_obj("../raw_data/pmid_ppi.pkl")
-    # print(len(docs))
-    # for it in docs:
-    #     print(docs[it])
-    #     break
+    pps.generate_pmid_dict()
+    docs = load_pickled_obj("../raw_data/pmid_ppi-07-05.pkl")
+    print(len(docs))
+    for it in docs:
+        print(docs[it])
+        break

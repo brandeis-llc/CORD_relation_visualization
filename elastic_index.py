@@ -39,7 +39,7 @@ class ESIndex(object):
         self.es = Elasticsearch(
             [{"host": "morbius.cs-i.brandeis.edu", "port": 22762}],
             http_auth=("llc", "oknevermind"),
-            timeout=100,
+            timeout=200,
         )
         es_index = Index(self.index)
         # delete existing index that has the same name

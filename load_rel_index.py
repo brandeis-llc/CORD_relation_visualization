@@ -8,6 +8,7 @@ from elastic_index import ESIndex
 from data.chem_gene_rel import ParseChemGeneRel
 from data.dise_gene_rel import ParseDiseGeneRel
 from data.chem_dis_rel import ParseDiseChemRel
+from data import load_pickled_obj
 
 
 def load_es_index(index_name, rel_parser, docs_input="raw_data/rel_docs.pkl"):
@@ -21,6 +22,11 @@ def load_es_index(index_name, rel_parser, docs_input="raw_data/rel_docs.pkl"):
     except FileNotFoundError:
         for i, (rel_doc, pmids_lst) in enumerate(rel_parser):
             for pmid in pmids_lst:
+                if pmid:
+                    pmid_url = f"https://www.ncbi.nlm.nih.gov/pubmed/{pmid}"
+                    rel_doc["pmid_url"] = pmid_url
+                else:
+                    rel_doc["pmid_url"] = None
                 docs.append({"pubmed_id": pmid, "action_interactions": rel_doc})
             if (i + 1) % 10000 == 0:
                 print(f"loading {i+1} documents...")
@@ -28,8 +34,8 @@ def load_es_index(index_name, rel_parser, docs_input="raw_data/rel_docs.pkl"):
             pickle.dump(docs, f)
         print(f"Writing docs to {docs_input}...")
     st = time.time()
-    ESIndex(index_name, docs)
     print(f"building index ...")
+    ESIndex(index_name, docs)
     print(f"=== Built {index_name} in {round(time.time() - st, 2)} seconds ===")
 
 
@@ -53,5 +59,5 @@ if __name__ == "__main__":
     parser.add_argument("index_name")
     args = parser.parse_args()
     load_es_index(
-        args.index_name, rel_parser, docs_input="raw_data/chem_gene_dise_rel.pkl"
+        args.index_name, rel_parser, docs_input="raw_data/chem_gene_dise_rel_with_url.pkl"
     )

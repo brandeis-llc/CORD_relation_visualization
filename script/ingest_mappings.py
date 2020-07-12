@@ -1,3 +1,6 @@
+import sys
+
+sys.path.append("../")
 from os.path import join as pjoin
 from data import pickle_obj_mapping
 import pandas as pd

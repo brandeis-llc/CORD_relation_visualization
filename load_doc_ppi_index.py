@@ -33,26 +33,30 @@ def load_es_index(
         print(f"loading {meta_input}...")
     pmid_oriented_meta = {item["pubmed_id"]: item for item in meta_data}
     for i, pmid in enumerate(ppi_docs):
-        tmp_doc = {"pubmed_id": pmid, "PPIs": ppi_docs[pmid], "doc_id": pmid, "pmid_url": ppi_docs[pmid][0]["pmid_url"]}
+        tmp_doc = {
+            "pubmed_id": pmid,
+            "PPIs": ppi_docs[pmid],
+            "doc_id": pmid,
+            "pmid_url": ppi_docs[pmid][0]["pmid_url"],
+        }
         meta_doc = pmid_oriented_meta.get(pmid, {}).copy()
         meta_parser(meta_doc)
         tmp_doc.update(meta_parser.meta_dict)
         docs.append(tmp_doc)
         if (i + 1) % 1000 == 0:
             print(f"loading {i+1} documents...")
-
     st = time.time()
-    ESIndex(index_name, docs)
     print(f"building index ...")
+    ESIndex(index_name, docs)
     print(f"=== Built {index_name} in {round(time.time() - st, 2)} seconds ===")
 
 
 if __name__ == "__main__":
 
-    pmc_stmts_path = "raw_data/2020-03-20-john/cord19_pmc_stmts_filt.pkl"
-    meta_input_path = "raw_data/sub_metadata.pkl"
+    pmc_stmts_path = "raw_data/PPCA/statements_covid19-7-7.json"
+    meta_input_path = "raw_data/sub_metadata-07-05.pkl"
     nlp = spacy.load("en_ner_bionlp13cg_md")
-    ppi_parser = ParsePMCStmts.from_pkl(pmc_stmts_path, spacy_model=nlp)
+    ppi_parser = ParsePMCStmts.from_json(pmc_stmts_path, spacy_model=nlp)
     parser = argparse.ArgumentParser()
     parser.add_argument("index_name")
     args = parser.parse_args()

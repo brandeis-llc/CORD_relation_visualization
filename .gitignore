@@ -5,6 +5,7 @@ raw_data
 note.txt
 script/*.ipynb
 playground.py
+script/add_pmid_url_to_blender.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
