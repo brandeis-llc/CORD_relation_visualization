@@ -28,17 +28,15 @@ class CovidMeta(Document):
 
 class ESIndex(object):
     def __init__(self, index_name, docs):
-        # connect to localhost (for elasticsearch)
+        # connect to your host (for elasticsearch)
         connections.create_connection(
-            hosts=["morbius.cs-i.brandeis.edu:22762"],
-            http_auth=("llc", "oknevermind"),
+            hosts=["yourhost"],
             timeout=100,
         )
         self.index = index_name
-        # connect to localhost (for elasticsearch-dsl)
+        # connect to your host (for elasticsearch-dsl)
         self.es = Elasticsearch(
-            [{"host": "morbius.cs-i.brandeis.edu", "port": 22762}],
-            http_auth=("llc", "oknevermind"),
+            [{"host": "your-host", "port": 0000}],
             timeout=200,
         )
         es_index = Index(self.index)
